@@ -1,0 +1,42 @@
+environment:
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      VCVARS_FILE: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      VCVARS_ARG: x86
+      VCPKG_DEFAULT_TRIPLET: x86-windows
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      VCVARS_FILE: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat
+      VCVARS_ARG: x86_amd64
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      VCVARS_FILE: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat
+      VCVARS_ARG:
+      VCPKG_DEFAULT_TRIPLET: x86-windows
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      VCVARS_FILE: C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat
+      VCVARS_ARG:
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+cache: C:\tools\vcpkg\installed\
+
+install:
+  - call "%VCVARS_FILE%" %VCVARS_ARG%
+  - cd C:/tools/vcpkg
+  - git config user.email "you@example.com"
+  - git config user.name "Your Name"
+  - git remote add aseprite https://github.com/aseprite/vcpkg.git
+  - git pull aseprite aseprite
+  - vcpkg install pixman freetype harfbuzz
+
+before_build:
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - git submodule update --init --recursive
+
+build_script:
+  - cd %APPVEYOR_BUILD_FOLDER%
+  - mkdir build
+  - cd build
+  - cmake .. -G "NMake Makefiles" -DCMAKE_TOOLCHAIN_FILE=C:/tools/vcpkg/scripts/buildsystems/vcpkg.cmake
+  - nmake
+  - copy C:\Tools\vcpkg\installed\%VCPKG_DEFAULT_TRIPLET%\bin\pixman-1.dll gfx
+  - ctest --output-on-failure
